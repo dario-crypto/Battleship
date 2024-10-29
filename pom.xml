@@ -11,4 +11,15 @@
         <maven.compiler.target>17</maven.compiler.target>
         <exec.mainClass>com.mycompany.battleship.BattleShip</exec.mainClass>
     </properties>
+    
+    <dependencies>
+        
+        <!-- https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core -->
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+
+    </dependencies>
 </project>

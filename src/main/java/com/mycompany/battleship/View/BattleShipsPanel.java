@@ -16,7 +16,8 @@ import java.util.List;
 import javax.swing.JPanel;
 
 /**
- *Board per gestire lo schema di gioco
+ * Board per gestire lo schema di gioco
+ *
  * @author Dario
  */
 public class BattleShipsPanel extends JPanel {
@@ -27,13 +28,17 @@ public class BattleShipsPanel extends JPanel {
     private final BattleField battleField;
     private Ship selectedShip;
     private final List<Position> enemyPositions;
+    private final Color SHIP_COLOR = Color.BLACK;
+    private final Color HIT_COLOR = Color.RED;
+    private final Color SELECTED_POSITION = Color.GREEN;
+    private final Color SELECTED_SHIP_COLOR = Color.BLUE;
+    private final Color BACKGROUND_COLOR = Color.WHITE;
 
     public BattleShipsPanel(Dimension dimension, BattleField battleField, int delta, StartGameFlag startGameFlag, List<Position> enemyPositions) {
 
         this.battleField = battleField;
-        setBackground(Color.WHITE);
+        setBackground(BACKGROUND_COLOR);
         setPreferredSize(dimension);
-        //spazio tra le linne
         this.delta = delta;
         this.enemyPositions = enemyPositions;
 
@@ -102,7 +107,7 @@ public class BattleShipsPanel extends JPanel {
         for (Ship ship : ships) {
 
             if (ship.equals(selectedShip)) {
-                g.setColor(Color.BLUE);
+                g.setColor(SELECTED_SHIP_COLOR);
             }
 
             List<Position> positions = ship.getPositions();
@@ -116,7 +121,7 @@ public class BattleShipsPanel extends JPanel {
             g.setColor(Color.BLACK);
 
         }
-        g.setColor(Color.GREEN);
+        g.setColor(SELECTED_POSITION);
         for (Position pos : enemyPositions) {
             int xGui = pos.getX() * delta + startX;
             int yGui = pos.getY() * delta + startY;
@@ -127,14 +132,15 @@ public class BattleShipsPanel extends JPanel {
         // disegna pezzi colpiti
         List<Position> hitsPos = battleField.getHits();
 
-        g.setColor(Color.red);
+        g.setColor(HIT_COLOR);
+        
         for (Position pos : hitsPos) {
             int xGui = pos.getX() * delta + startX;
             int yGui = pos.getY() * delta + startY;
             g.fillRect(xGui, yGui, delta, delta);
 
         }
-        g.setColor(Color.BLACK);
+        //g.setColor(Color.BLACK);
 
     }
 

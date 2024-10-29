@@ -135,7 +135,7 @@ public class GameGUI extends JFrame {
         private final JButton startGameButton;
         private final JLabel gameTips;
         private final String textTips = "<html>Configura il campo di battaglia.<br>Seleziona la nave con un click e spostala con i tasti W A S D.</html>";
-
+        
         public StartGamePanel() {
             this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setBackground(Color.WHITE);
@@ -191,7 +191,7 @@ public class GameGUI extends JFrame {
 
                         BattleField bf = player.getBattleField();
                         Position attackPos = new Position(x, y);
-                        if (bf.isValidPosition(attackPos)) {
+                        if (bf.isValidPosition(attackPos) && player.getAvaibleMoves().contains(attackPos)) {
 
                             //attacco il computer
                             boolean hit = cpuPlayer.receiveAttack(attackPos);
@@ -199,6 +199,7 @@ public class GameGUI extends JFrame {
                             attackPos.setHit(hit);
                             //aggiornamento mossa utente
                             player.addMove(attackPos);
+                            
                             System.out.println("Posizione colpita: " + attackPos);
                             bsp.repaint();
 
@@ -209,7 +210,7 @@ public class GameGUI extends JFrame {
 
                             }
 
-                            Position cpuPos = cpuPlayer.generatePosition();
+                            Position cpuPos = cpuPlayer.generateRandomPosition();
                             player.receiveAttack(cpuPos);
                             //aggiornamento mosse cpu
                             cpuPlayer.addMove(cpuPos);

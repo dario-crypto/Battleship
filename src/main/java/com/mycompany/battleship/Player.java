@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -66,7 +67,12 @@ public class Player {
         allMoves.removeAll(moveHistorySet);
         return new ArrayList<>(allMoves);
     }
-
+    
+    
+    public List<Position> getHitPositions(){
+      return movesHistory.stream().filter(p->p.isHit()).collect(Collectors.toList());
+    }
+    
     public List<Position> getHitsMoves() {
         return battleField.getHitMoves();
     }
