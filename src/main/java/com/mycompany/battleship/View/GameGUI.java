@@ -135,7 +135,7 @@ public class GameGUI extends JFrame {
         private final JButton startGameButton;
         private final JLabel gameTips;
         private final String textTips = "<html>Configura il campo di battaglia.<br>Seleziona la nave con un click e spostala con i tasti W A S D.</html>";
-        
+
         public StartGamePanel() {
             this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setBackground(Color.WHITE);
@@ -194,12 +194,18 @@ public class GameGUI extends JFrame {
                         if (bf.isValidPosition(attackPos) && player.getAvaibleMoves().contains(attackPos)) {
 
                             //attacco il computer
-                            boolean hit = cpuPlayer.receiveAttack(attackPos);
+                            Ship ship = cpuPlayer.receiveAttack(attackPos);
+                            if (ship != null) {
+                                attackPos.setHit(true);
+                                if (ship.isSunk()) {
+                                    System.out.println("Hai affondato una nave di lunghezza: " + ship.getLength());
+                                }
+                            }
 
-                            attackPos.setHit(hit);
+                            //attackPos.setHit(hit);
                             //aggiornamento mossa utente
                             player.addMove(attackPos);
-                            
+
                             System.out.println("Posizione colpita: " + attackPos);
                             bsp.repaint();
 
@@ -210,8 +216,17 @@ public class GameGUI extends JFrame {
 
                             }
 
-                            Position cpuPos = cpuPlayer.generateRandomPosition();
-                            player.receiveAttack(cpuPos);
+                            //Position cpuPos = cpuPlayer.generateRandomPosition();
+                            Position cpuPos = cpuPlayer.policy();
+                            Ship ship2 = player.receiveAttack(cpuPos);
+                            if (ship2 != null) {
+                                cpuPos.setHit(true);
+                                if (ship2.isSunk()) {
+                                    cpuPlayer.addSunkShip(ship2);
+                                    System.out.println("Nave affondata: " + ship2.getLength());
+                                }
+                            }
+
                             //aggiornamento mosse cpu
                             cpuPlayer.addMove(cpuPos);
                             bsp.repaint();

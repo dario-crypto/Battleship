@@ -4,9 +4,14 @@
  */
 package com.mycompany.battleship;
 
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.util.Pair;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -22,11 +27,98 @@ import org.jgrapht.graph.SimpleGraph;
  */
 public class CpuPlayer extends Player {
 
+    //lunghezza delle navi da colpire
+    //La probabilita di colpire una nave da 5 è piu alta rispetto alle altre
+    //private int currentTarget = 5;
+    private static final int MAX_SHIP_LENGTH = 5;
+    private static final int MIN_SHIP_LENGTH = 1;
+    private List<Ship> sunkShips = new ArrayList<>();
+    private static final Logger LOG = Logger.getLogger(CpuPlayer.class.getName());
+
     public CpuPlayer(BattleField battleField) {
         super(battleField);
     }
 
-  
+    public void addSunkShip(Ship ship) {
+        /**
+         * Aggiunge la navi affondate del giocatore avversario
+         */
+        sunkShips.add(ship);
+    }
+
+    public int getCountSunkShipsByLength(int length) {
+        return (int) sunkShips.stream().filter(s -> s.getLength() == length).count();
+
+    }
+
+    public int getCountAliveShipsByLength(int length) {
+        /**
+         * Resituisce il numero di navi non affondate di una data lunghezza
+         */
+        return super.getBattleField().getCountShipsByLenght(length) - getCountSunkShipsByLength(length);
+    }
+
+    public int updateTarget() {
+        /**
+         * Aggiornata il target corrente a partire dalla massima lunghezza
+         * considerando le navi affondate
+         */
+        int currentTarget = MAX_SHIP_LENGTH;
+        while (getCountAliveShipsByLength(currentTarget) == 0 && currentTarget > MIN_SHIP_LENGTH) {
+            currentTarget -= 1;
+        }
+        return currentTarget;
+    }
+
+    public Position policy() {
+        
+        int currentTarget = updateTarget();
+        //rendere l'eccezione unchecked
+        List<ShadowShip> shadowShips = getAlignmentHitPositions();
+        Set<Position> forbPositions = forbiddenPositions(shadowShips);
+        Set<Position> attacks = generateAttackablePositions(shadowShips);
+        Set<Position> avaiblePositions = super.getAvaibleMoves().stream().collect(Collectors.toSet());
+        Set<Position> diagAttack = diagonalStrategy(currentTarget);
+
+        avaiblePositions.removeAll(forbPositions);
+        //intersezione
+        attacks.retainAll(avaiblePositions);
+        //System.out.println("SHADOW SHIPS: " + shadowShips);
+        //System.out.println("NAVI AFFONDATE: " + sunkShips);
+        diagAttack.retainAll(avaiblePositions);
+        //System.out.println("CURRENT TARGET: " + currentTarget);
+
+        if (!attacks.isEmpty()) {
+            //System.out.println("ATTACK: " + attacks);
+            LOG.info("Attack Strategy");
+            return attacks.stream().collect(Collectors.toList()).get(0);
+        } else {
+            //calcolo le probabilita in base al target
+            List<Pair<Position, Double>> distribution = getHitMap(diagAttack, currentTarget);
+            //System.out.println("POSIZIONI DISPONIBILI: " + avaiblePositions);
+            //System.out.println("DISTRIBUTION: " + distribution);
+            LOG.info("Diagonal Strategy");
+            EnumeratedDistribution<Position> enumeratedDistribution = new EnumeratedDistribution(distribution);
+            return enumeratedDistribution.sample();
+            //return diagAttack.stream().collect(Collectors.toList()).get(0);
+        }
+
+    }
+
+    public List<Pair<Position, Double>> getHitMap(Set<Position> positions, int target) {
+        List<Pair<Position, Double>> hitMap = new ArrayList<>();
+        for (Position pos : positions) {
+            double prob = 0.;
+            // Controllo delle posizioni circostanti
+            prob += BattleField.isValidPosition(new Position(pos.getX(), pos.getY() - (target - 1))) ? 1 : 0; // top
+            prob += BattleField.isValidPosition(new Position(pos.getX(), pos.getY() + target - 1)) ? 1 : 0; // bottom
+            prob += BattleField.isValidPosition(new Position(pos.getX() - (target - 1), pos.getY())) ? 1 : 0; // left
+            prob += BattleField.isValidPosition(new Position(pos.getX() + target - 1, pos.getY())) ? 1 : 0; // right
+            hitMap.add(new Pair(pos, prob));
+        }
+        return hitMap;
+    }
+
     public Position generateRandomPosition() {
         /**
          * Genera un posizione casuale tra quelle non giocate
@@ -40,11 +132,9 @@ public class CpuPlayer extends Player {
     public Set<Position> diagonalStrategy(int distance) {
 
         /**
-         * Distranza tra le posizioni tra le righe e le colonne
-         *
+         * distance è la distanza tra i campioni lungo le x e le y
          *
          */
-
         List<Position> positions = super.getAvaibleMoves();
         //List<Position> strategy = new ArrayList<>();
 
@@ -52,21 +142,28 @@ public class CpuPlayer extends Player {
 
     }
 
-    public List<Position> generateAttackablePositions() throws Exception {
+    public Set<Position> generateAttackablePositions(List<ShadowShip> shadowShips) {
 
         /**
          *
          * Non considera le posizioni disponibili
          */
-        List<ShadowShip> shadowShips = getAlignmentHitPositions();
-
-        // Ottenere le navi colpite
         List<Position> attacks = new ArrayList<>();
 
-        for (ShadowShip ss : shadowShips) {
+        // considero solo le shadowShips non affondate
+        List<ShadowShip> shadowShipsFilter = shadowShips.stream().filter(s -> {
+            for (Ship sunkShip : sunkShips) {
+                if (s.match(sunkShip)) {
+                    return false;
+                }
+            }
+            return true;
+        }).collect(Collectors.toList());
+
+        for (ShadowShip ss : shadowShipsFilter) {
             List<Position> shipPositions = ss.getPositions();
 
-            // Posizioni di attacco per navi di lunghezza > 1
+            // Posizioni di attacco per navi di lunghezza superiori ad 1
             if (ss.getLenght() > 1) {
                 Position firstPos = ss.getHead();
                 Position lastPos = ss.getTail();
@@ -89,18 +186,19 @@ public class CpuPlayer extends Player {
         }
 
         // Filtraggio finale delle posizioni valide
-        return attacks.stream().filter(p -> BattleField.isValidPosition(p)).collect(Collectors.toList());
+        return attacks.stream().filter(p -> BattleField.isValidPosition(p)).collect(Collectors.toSet());
     }
 
-    public List<ShadowShip> getAlignmentHitPositions() throws Exception {
+    public List<ShadowShip> getAlignmentHitPositions() {
         SimpleGraph<Position, DefaultEdge> g
-                = new SimpleGraph<Position, DefaultEdge>(DefaultEdge.class);
+                = new SimpleGraph<>(DefaultEdge.class);
 
         List<Position> hitPositions = super.getHitPositions();
 
         //inizializzazione delle partizioni
         hitPositions.forEach(hitPos -> g.addVertex(hitPos));
 
+        // creazione delle connessioni
         for (int i = 0; i < hitPositions.size() - 1; i++) {
 
             for (int j = i + 1; j < hitPositions.size(); j++) {
@@ -118,21 +216,17 @@ public class CpuPlayer extends Player {
         ConnectivityInspector<Position, DefaultEdge> conn = new ConnectivityInspector(g);
         List<Set<Position>> components = conn.connectedSets();
 
-        //tramite le shadow ships individuo la direzione dei pezzi colpiti adiacenti
-        List<ShadowShip> shadowShips = new ArrayList<>();
-        for (Set<Position> component : components) {
-            ShadowShip shadowShip = new ShadowShip(new ArrayList(component));
-            shadowShips.add(shadowShip);
-        }
-
-        return shadowShips;
+        // Trasformare ogni componente in uno ShadowShip
+        return components.stream()
+                .map(component -> new ShadowShip(new ArrayList<>(component)))
+                .collect(Collectors.toList());
 
     }
 
     public Set<Position> forbiddenPositions(List<ShadowShip> shadowShips) {
         /**
          * P O P P O P
-         * P X P O X P
+         * P X P O X O
          * P X P P O P
          * P O P
          */
@@ -168,19 +262,21 @@ public class CpuPlayer extends Player {
     public static void main(String args[]) {
         BattleField bf = new BattleField();
         CpuPlayer cpu = new CpuPlayer(bf);
-        Position p1 = new Position(5, 5);
-        Position p2 = new Position(5, 6);
-        Position p5 = new Position(5, 7);
-        Position p3 = new Position(8, 8);
-        Position p4 = new Position(9, 8);
 
-        Position p6 = new Position(0, 0);
+        Position p1 = new Position(7, 1);
+        Position p2 = new Position(7, 0);
+        Position p3 = new Position(7, 2);
+        Position p4 = new Position(4, 1);
+        Position p5 = new Position(3, 1);
+        Position p6 = new Position(2, 1);
+
         p1.setHit(true);
         p2.setHit(true);
         p3.setHit(true);
         p4.setHit(true);
         p5.setHit(true);
         p6.setHit(true);
+
         cpu.addMove(p1);
         cpu.addMove(p2);
         cpu.addMove(p3);
@@ -188,26 +284,15 @@ public class CpuPlayer extends Player {
         cpu.addMove(p5);
         cpu.addMove(p6);
 
+        Position move = cpu.policy();
+        System.out.println("Mossa effettuata: " + move);
+
         //individuare le mosse probite
         //individuo i possibili attacchi
-        //rimuovo dall'insieme delle mosse dipobili le mosse proibite
+        //rimuovo dall'insieme delle mosse disponili le mosse proibite
         //filtro solo i possibili attacchi presenti nelle mosse disponibili
         // calcolo per ogni possibile attacco la probabilita
         // scelgo l'attacco con prob piu alta, se la prob è 0 scelgo una posizione a caso
-        try {
-            List<ShadowShip> shadowShips = cpu.getAlignmentHitPositions();
-            Set<Position> forbPositions = cpu.forbiddenPositions(shadowShips);
-
-            //forbPositions.forEach(p -> System.out.println(p));
-            shadowShips.forEach(ss -> System.out.println(ss));
-            cpu.generateAttackablePositions().forEach(a -> System.out.println("Attack: " + a));
-
-            forbPositions.forEach(p -> System.out.println("Forbidden position: " + p));
-
-        } catch (Exception ex) {
-            Logger.getLogger(CpuPlayer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
     }
 
 }

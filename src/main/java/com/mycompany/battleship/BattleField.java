@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.commons.math3.util.Pair;
 
 /**
  *
@@ -67,7 +69,7 @@ public final class BattleField {
         return checkX && checkY;
     }
 
-    public boolean hit(Position position) throws IllegalArgumentException {
+    public Ship hit(Position position) throws IllegalArgumentException {
         /**
          * Restituisce true se una nave posizionata sulla board è stata colpita,
          * atrimenti restituisce false
@@ -84,10 +86,13 @@ public final class BattleField {
             if (ship.collision(position)) {
                 ship.decreaseLife();
                 hits.add(position);
-                return true;
+                //return true;
+
+                return ship;
+
             }
         }
-        return false;
+        return null;
     }
 
     public Ship getShipByPosition(Position position) {
@@ -167,30 +172,44 @@ public final class BattleField {
         return false;
     }
 
+    public List<Ship> getShipsByLength(int length) {
+        return ships.stream().filter(s -> s.getLength() == length).collect(Collectors.toList());
+    }
+
+    public int getCountShipsByLenght(int length) {
+        return (int) ships.stream().filter(s -> s.getLength() == length).count();
+
+    }
+
+    public int getAliveShipsCountByLength(int lenght) {
+        return (int) getShipsByLength(lenght).stream().filter(s -> !s.isSunk()).count();
+    }
+
     public void defaultInit() {
 
-        Ship ship1 = new Ship(new Position(7, 0), 4, Ship.ShipDirection.VERTICAL);
-        Ship ship2 = new Ship(new Position(9, 0), 1, Ship.ShipDirection.VERTICAL);
-        Ship ship3 = new Ship(new Position(2, 1), 3, Ship.ShipDirection.HORIZONTAL);
-        Ship ship4 = new Ship(new Position(1, 3), 3, Ship.ShipDirection.HORIZONTAL);
-        Ship ship5 = new Ship(new Position(4, 5), 2, Ship.ShipDirection.HORIZONTAL);
-        Ship ship6 = new Ship(new Position(9, 6), 1, Ship.ShipDirection.HORIZONTAL);
-        Ship ship7 = new Ship(new Position(0, 7), 1, Ship.ShipDirection.VERTICAL);
-        Ship ship8 = new Ship(new Position(4, 7), 1, Ship.ShipDirection.VERTICAL);
-        Ship ship9 = new Ship(new Position(0, 9), 2, Ship.ShipDirection.HORIZONTAL);
-        Ship ship10 = new Ship(new Position(7, 9), 2, Ship.ShipDirection.HORIZONTAL);
+        Ship ship1 = new Ship(new Position(0, 0), 3, Ship.ShipDirection.HORIZONTAL);
+        Ship ship2 = new Ship(new Position(2, 7), 3, Ship.ShipDirection.VERTICAL);
+        Ship ship3 = new Ship(new Position(5, 7), 2, Ship.ShipDirection.HORIZONTAL);
+        Ship ship4 = new Ship(new Position(2, 5), 5, Ship.ShipDirection.HORIZONTAL);
+        Ship ship5 = new Ship(new Position(8, 5), 4, Ship.ShipDirection.VERTICAL);
+        //Ship ship6 = new Ship(new Position(9, 6), 1, Ship.ShipDirection.HORIZONTAL);
+        //Ship ship7 = new Ship(new Position(0, 7), 1, Ship.ShipDirection.VERTICAL);
+        //Ship ship8 = new Ship(new Position(4, 7), 1, Ship.ShipDirection.VERTICAL);
+        //Ship ship9 = new Ship(new Position(0, 9), 2, Ship.ShipDirection.HORIZONTAL);
+        //Ship ship10 = new Ship(new Position(7, 9), 2, Ship.ShipDirection.HORIZONTAL);
 
         ships.add(ship1);
         ships.add(ship2);
         ships.add(ship3);
         ships.add(ship4);
         ships.add(ship5);
+        /*
         ships.add(ship6);
         ships.add(ship7);
         ships.add(ship8);
         ships.add(ship9);
         ships.add(ship10);
-
+         */
         setShips(ships);
 
     }

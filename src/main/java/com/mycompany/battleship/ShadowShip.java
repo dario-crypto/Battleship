@@ -4,6 +4,9 @@
  */
 package com.mycompany.battleship;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -16,7 +19,7 @@ public class ShadowShip {
     private List<Position> positions;
     private Ship.ShipDirection direction;
 
-    public ShadowShip(List<Position> positions) throws Exception {
+    public ShadowShip(List<Position> positions) {
 
         this.positions = positions;
         direction = findDirection();
@@ -26,7 +29,7 @@ public class ShadowShip {
         return positions;
     }
 
-    public Ship.ShipDirection findDirection() throws Exception {
+    public Ship.ShipDirection findDirection() {
         if (positions.size() == 1) {
             return Ship.ShipDirection.HORIZONTAL;
         }
@@ -38,13 +41,22 @@ public class ShadowShip {
         if (isVertical()) {
             return Ship.ShipDirection.VERTICAL;
         }
-        throw new Exception("Direzione non riconosciuta");
+        throw new RuntimeException("Direzione non riconosciuta" + toString());
     }
 
     public boolean isHorizontal() {
+        List<Position> sortedPositions = new ArrayList<>(positions);
 
-        for (int i = 0; i < positions.size() - 1; i++) {
-            if (!positions.get(i).isHorizontalAligned(positions.get(i + 1))) {
+        // Ordina le posizioni in base alla coordinata x
+        Collections.sort(sortedPositions, new Comparator<Position>() {
+            @Override
+            public int compare(Position p1, Position p2) {
+                return Integer.compare(p1.getX(), p2.getX());
+            }
+        });
+
+        for (int i = 0; i < sortedPositions.size() - 1; i++) {
+            if (!sortedPositions.get(i).isHorizontalAligned(sortedPositions.get(i + 1))) {
                 return false;
             }
         }
@@ -52,8 +64,15 @@ public class ShadowShip {
     }
 
     public boolean isVertical() {
-        for (int i = 0; i < positions.size() - 1; i++) {
-            if (!positions.get(i).isVerticalAligned(positions.get(i + 1))) {
+        List<Position> sortedPositions = new ArrayList<>(positions);
+        Collections.sort(sortedPositions, new Comparator<Position>() {
+            @Override
+            public int compare(Position p1, Position p2) {
+                return Integer.compare(p1.getY(), p2.getY());
+            }
+        });
+        for (int i = 0; i < sortedPositions.size() - 1; i++) {
+            if (!sortedPositions.get(i).isVerticalAligned(sortedPositions.get(i + 1))) {
                 return false;
             }
         }
@@ -104,6 +123,28 @@ public class ShadowShip {
 
     }
 
+    public boolean match(Ship ship) {
+
+        List<Position> shipPositions = ship.getPositions();
+
+        if (shipPositions.size() != getLenght()) {
+            return false;
+        } else {
+            int count = 0;
+            for (Position pos : positions) {
+                for (Position shiPos : shipPositions) {
+
+                    if (shiPos.equals(pos)) {
+                        count += 1;
+                        break;
+                    }
+                }
+            }
+            return count == shipPositions.size();
+        }
+
+    }
+
     public Position getVerticalTail() {
         int maxY = positions.get(0).getY();
         int x = positions.get(0).getX();
@@ -148,7 +189,5 @@ public class ShadowShip {
             return getVerticalTail();
         }
     }
-    
-
 
 }

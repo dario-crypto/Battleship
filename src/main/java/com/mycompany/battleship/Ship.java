@@ -158,6 +158,10 @@ public class Ship {
         }
     }
 
+    public boolean isSunk() {
+        return life == 0;
+    }
+
     /*Manca il meccanismo di verifica dello spostamento in tutte le direzioni*/
     public void moveBottom() {
         int x = headPosition.getX();

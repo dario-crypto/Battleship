@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.math3.util.Pair;
 
 /**
  *
@@ -26,7 +27,7 @@ public class Player {
         this.battleField = battleField;
     }
 
-    public boolean receiveAttack(Position position) {
+    public Ship receiveAttack(Position position) {
         return battleField.hit(position);
     }
 
